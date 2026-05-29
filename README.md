@@ -72,7 +72,7 @@
 ### 1️⃣ Clonar y configurar
 
 ```bash
-git clone <tu-repo>
+git clone https://github.com/smringdesigns/document-compliance-platform.git
 cd compliance-platform
 ```
 
