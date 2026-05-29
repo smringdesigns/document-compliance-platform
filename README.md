@@ -479,13 +479,13 @@ MIT License - ver `LICENSE` para detalles
 
 ## ✉️ Contacto
 
-**Autor**: Stivenson Mussa  
-**Email**: smring.designs@gmail.com  
-**GitHub**: [tu-github]
-
+**Autor**: Stivenson Mussa R. 
+**Email**: elmus_18@hotmail.com  
+**GitHub**: https://github.com/smringdesigns 
+**Linkedin**: https://www.linkedin.com/in/stivenson-mussa-rodriguez/ 
 ---
 
-**Última actualización**: May 29, 2026
+**Última actualización**: May 27, 2026
 **Versión**: 1.0.0 (Production Ready)
 
 
