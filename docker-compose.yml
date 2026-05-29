@@ -1,0 +1,220 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: compliance_postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: compliance_db
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - compliance_network
+
+  mongodb:
+    image: mongo:7
+    container_name: compliance_mongodb
+    restart: unless-stopped
+
+    ports:
+      - "27017:27017"
+
+    volumes:
+      - mongo_data:/data/db
+
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - compliance_network
+
+  minio:
+    image: minio/minio
+    container_name: compliance_minio
+    restart: unless-stopped
+
+    command: server /data --console-address ":9001"
+
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+    volumes:
+      - minio_data:/data
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - compliance_network
+
+  mock-soap:
+    build:
+      context: ./services/mock-soap-server
+
+    container_name: compliance_mock_soap
+
+    restart: unless-stopped
+
+    ports:
+      - "8090:8090"
+
+    networks:
+      - compliance_network
+
+  fastapi:
+    build:
+      context: ./services/document-fastapi
+
+    container_name: compliance_fastapi
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: compliance_db
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+
+      MONGO_URL: mongodb://mongodb:27017
+
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: documents
+
+      BFF_URL: http://express-bff:4000
+
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      mongodb:
+        condition: service_healthy
+
+      minio:
+        condition: service_healthy
+
+      mock-soap:
+        condition: service_started
+
+    networks:
+      - compliance_network
+
+  flask-gateway:
+    build:
+      context: ./services/soap-gateway-flask
+
+    container_name: compliance_flask_gateway
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: compliance_db
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+
+      SOAP_URL: http://mock-soap:8090/soap
+
+    ports:
+      - "8001:8001"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      mock-soap:
+        condition: service_started
+
+    networks:
+      - compliance_network
+
+  express-bff:
+    build:
+      context: ./services/bff-node
+
+    container_name: compliance_bff
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      FASTAPI_URL: http://fastapi:8000
+      FLASK_URL: http://flask-gateway:8001
+
+    ports:
+      - "4000:4000"
+
+    depends_on:
+      - fastapi
+      - flask-gateway
+
+    networks:
+      - compliance_network
+
+  frontend:
+    build:
+      context: ./services/frontend-react
+
+    container_name: compliance_frontend
+
+    restart: unless-stopped
+
+    environment:
+      VITE_API_URL: http://localhost:4000
+
+    ports:
+      - "3000:3000"
+
+    depends_on:
+      - express-bff
+
+    networks:
+      - compliance_network
+
+volumes:
+  postgres_data:
+  mongo_data:
+  minio_data:
+
+networks:
+  compliance_network:
+    driver: bridge
