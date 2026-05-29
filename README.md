@@ -1,68 +1,116 @@
 # Compliance Platform
 
-Sistema completo de procesamiento y verificación de compliance de documentos con arquitectura de microservicios.
+🏛️ Sistema completo de procesamiento y verificación de compliance de documentos con arquitectura de microservicios.
+
+**Evaluación**: Semi-Senior | **Entorno**: 100% Local (Docker) | **Lenguajes**: Python, Node.js, React, TypeScript
+
+---
 
 ## 📋 Servicios
 
-- **Frontend React** - Interfaz web moderna con Vite
-- **BFF Node.js + Express** - Backend for Frontend con Socket.IO para notificaciones en tiempo real
-- **FastAPI** - Servicio de procesamiento y gestión de documentos
-- **Flask Gateway** - Gateway SOAP para verificación de compliance
-- **Mock SOAP Server** - Servidor SOAP para testing de verificación de compliance
-- **PostgreSQL** - Base de datos principal (documentos, compliance checks)
-- **MongoDB** - Base de datos NoSQL (auditoría, logs)
-- **MinIO** - Almacenamiento de objetos (archivos de documentos)
+| Servicio | Tecnología | Puerto | Descripción |
+|----------|-----------|--------|------------|
+| **Frontend** | React + Vite + TypeScript | 3000 | Interfaz web moderna |
+| **BFF** | Express.js + Socket.IO | 4000 | Backend for Frontend con notificaciones |
+| **FastAPI** | Python/FastAPI | 8000 | Procesamiento y gestión de documentos |
+| **Flask Gateway** | Python/Flask | 8001 | Gateway SOAP para compliance |
+| **Mock SOAP** | Python/Flask | 8090 | Servidor SOAP gubernamental simulado |
+| **PostgreSQL** | SQL | 5432 | Base de datos relacional |
+| **MongoDB** | NoSQL | 27017 | Base de datos de auditoría |
+| **MinIO** | Object Storage | 9000/9001 | Almacenamiento de objetos |
+
+---
 
 ## 🏗️ Arquitectura
 
 ```
-Frontend (React) 
-    ↓
-BFF (Express + Socket.IO)
-    ├→ FastAPI (Documentos + MinIO)
-    └→ Flask Gateway
-        └→ Mock SOAP Server (Verificación)
-        
-Bases de datos:
-- PostgreSQL: documentos, compliance_checks
-- MongoDB: auditoría, logs
-- MinIO: almacenamiento de archivos
+┌─────────────────────────────────────────────────────────────┐
+│                    FRONTEND (React :3000)                   │
+│              Upload Form + Document List + Details          │
+└────────────────────────┬────────────────────────────────────┘
+                         │ HTTP + WebSocket
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│          BFF (Express.js + Socket.IO :4000)                │
+│   Dashboard │ Upload Proxy │ Webhooks │ Notifications      │
+└───┬─────────────────────────────────────┬───────────────────┘
+    │                                     │
+    │ REST API                            │ REST API
+    ▼                                     ▼
+┌──────────────────────────┐  ┌──────────────────────────────┐
+│   FastAPI (:8000)        │  │  Flask Gateway (:8001)       │
+│  • Document Upload       │  │  • SOAP Translation          │
+│  • MinIO Integration     │  │  • Compliance Verification   │
+│  • PostgreSQL            │  │  • PostgreSQL Persistence    │
+└────────────┬─────────────┘  └──────────────┬────────────────┘
+             │                               │
+             │ MinIO API                     │ SOAP Request
+             ▼                               ▼
+       ┌─────────────────┐         ┌──────────────────────┐
+       │  MinIO (9000)   │         │ Mock SOAP (:8090)    │
+       │  Documents      │         │ Gov't System Sim     │
+       └─────────────────┘         └──────────────────────┘
+
+📊 DATABASES:
+┌─────────────┐   ┌──────────────┐   ┌────────────────┐
+│ PostgreSQL  │   │  MongoDB     │   │  MinIO         │
+│ Documents   │   │  Audit Logs  │   │  File Storage  │
+│ Compliance  │   │              │   │                │
+└─────────────┘   └──────────────┘   └────────────────┘
 ```
 
-## 🚀 Inicio rápido
+---
 
-### Requisitos
-- Docker y Docker Compose
-- Node.js 20+ (para desarrollo local sin Docker)
-- Python 3.11+ (para desarrollo local sin Docker)
+## 🚀 Inicio Rápido
 
-### Levantar todo con Docker
+### Prerequisitos
+
+- **Docker Desktop** (Windows/Mac) o **Docker + Docker Compose** (Linux)
+- **Git**
+- Mínimo 4GB RAM disponible
+
+### 1️⃣ Clonar y configurar
+
+```bash
+git clone <tu-repo>
+cd compliance-platform
+```
+
+### 2️⃣ Levantar todo con Docker
 
 ```bash
 docker-compose up --build
 ```
 
-Espera a que todos los servicios estén listos. Verás mensajes como:
+Verás algo como:
 ```
-compliance_bff | BFF corriendo en puerto 4000
-compliance_frontend | [2024-05-28 ...] Listening on 0.0.0.0:3000
+✓ compliance_postgres is healthy
+✓ compliance_mongodb is healthy
+✓ compliance_minio is healthy
+✓ compliance_mock_soap started
+✓ compliance_fastapi started
+✓ compliance_flask_gateway started
+✓ compliance_bff started
+✓ compliance_frontend started
 ```
 
-### Acceder a la aplicación
+### 3️⃣ Acceder a la aplicación
 
 | Servicio | URL | Credenciales |
 |----------|-----|--------------|
 | **Frontend** | http://localhost:3000 | - |
-| **BFF API** | http://localhost:4000/api/v1 | - |
-| **FastAPI Docs** | http://localhost:8000/docs | - |
+| **FastAPI Swagger** | http://localhost:8000/docs | - |
 | **MinIO Console** | http://localhost:9001 | minioadmin/minioadmin |
-| **PostgreSQL** | localhost:5432 | postgres/password |
-| **MongoDB** | localhost:27017 | - |
+| **BFF API** | http://localhost:4000/api/v1 | - |
+
+---
 
 ## 📝 Variables de Entorno (.env)
 
+Crea un archivo `.env` en la raíz del proyecto:
+
 ```env
-# Base de datos
+# PostgreSQL
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=password
 POSTGRES_DB=compliance_db
@@ -70,184 +118,376 @@ POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
 
 # MongoDB
-MONGO_URI=mongodb://mongodb:27017
+MONGO_URI=mongodb://mongodb:27017/compliance
 
-# MinIO (almacenamiento)
+# MinIO
 MINIO_ENDPOINT=minio:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
 MINIO_BUCKET=documents
+MINIO_SECURE=false
 
-# SOAP
+# SOAP Mock Server
 SOAP_URL=http://mock-soap:8090/soap
 
 # BFF
-BFF_URL=http://express-bff:4000
+FASTAPI_URL=http://fastapi:8000
+FLASK_URL=http://flask-gateway:8001
+PORT=4000
 ```
 
-## 🔄 Flujo de Trabajo
+---
 
-1. **Upload de documento**
-   - Usuario sube archivo desde frontend
-   - BFF recibe y reenvía a FastAPI
-   - FastAPI guarda en PostgreSQL y MinIO
+## 🔄 Flujo de Trabajo Completo
 
-2. **Verificación de Compliance**
-   - Usuario hace click en "Verificar compliance"
-   - FastAPI contacta Flask Gateway
-   - Flask Gateway envía SOAP request al Mock Server
-   - Resultado se guarda en PostgreSQL
+### 1. Upload de Documento
 
-3. **Notificaciones en Tiempo Real**
-   - Cuando termina el procesamiento, FastAPI notifica al BFF
-   - BFF emite evento por Socket.IO
-   - Frontend recibe en tiempo real
-
-## 🛠️ Desarrollo Local
-
-### Setup inicial
-
-```bash
-# Instalar dependencias del BFF
-cd services/bff-node
-npm install
-
-# Instalar dependencias del Frontend
-cd services/frontend-react
-npm install
-
-# Instalar dependencias de FastAPI
-cd services/document-fastapi
-pip install -r requirements.txt
-
-# Instalar dependencias de Flask
-cd services/soap-gateway-flask
-pip install -r requirements.txt
+```
+User (Frontend) 
+  ↓ POST /upload (multipart)
+BFF (Express)
+  ↓ Forward a FastAPI
+FastAPI
+  ↓ Upload a MinIO
+  ↓ Guardar en PostgreSQL
+  ↓ Return metadata a BFF
+BFF → Frontend (Success)
 ```
 
-### Ejecutar servicios localmente
+### 2. Verificación de Compliance
 
-```bash
-# Terminal 1: BFF
-cd services/bff-node
-npm run dev
-
-# Terminal 2: Frontend
-cd services/frontend-react
-npm run dev
-
-# Terminal 3: FastAPI
-cd services/document-fastapi
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Terminal 4: Flask Gateway
-cd services/soap-gateway-flask
-python app/app.py
-
-# Terminal 5: Mock SOAP Server
-cd services/mock-soap-server
-python app.py
-
-# Terminal 6: Bases de datos (Docker)
-docker-compose up postgres mongodb minio
 ```
+User hace click "Verificar Compliance"
+  ↓ POST /documents/{id}/process
+FastAPI
+  ↓ Llama Flask Gateway
+Flask Gateway
+  ↓ Construye XML SOAP
+  ↓ Envía a Mock SOAP Server
+Mock SOAP
+  ↓ Retorna COMPLIANT/NON_COMPLIANT
+Flask
+  ↓ Parsea respuesta XML
+  ↓ Guarda en PostgreSQL
+  ↓ Retorna JSON a FastAPI
+FastAPI
+  ↓ Llama webhook a BFF
+BFF
+  ↓ Emite Socket.IO event
+Frontend
+  ↓ Recibe en tiempo real
+  ↓ Actualiza UI
+```
+
+---
 
 ## 📚 API Endpoints
 
-### BFF (puerto 4000)
+### BFF (Express) - Puerto 4000
 
-```
-GET    /health - Health check
-GET    /api/v1/dashboard/summary - Resumen del dashboard
-GET    /api/v1/documents - Listar documentos (paginado)
-GET    /api/v1/documents/{id} - Detalle de documento
-POST   /api/v1/documents/upload - Subir documento
-POST   /api/v1/documents/{id}/process - Procesar/verificar documento
-POST   /api/v1/webhooks/processing-complete - Webhook (interno)
-```
+```http
+GET  /health
+     → { status: "ok" }
 
-### FastAPI (puerto 8000)
+GET  /api/v1/dashboard/summary
+     → { total_documents, uploaded, processed, recent_documents }
 
-```
-GET    /health - Health check
-GET    /api/v1/documents/ - Listar documentos
-GET    /api/v1/documents/{id} - Detalle de documento
-POST   /api/v1/documents/upload - Subir documento
-POST   /api/v1/documents/{id}/process - Procesar documento
-```
+GET  /api/v1/documents?page=1&limit=10
+     → { total, page, limit, items: [...] }
 
-### Flask Gateway (puerto 8001)
+GET  /api/v1/documents/{id}
+     → { id, filename, document_type, status, compliance: {...} }
 
-```
-GET    /health - Health check
-POST   /api/v1/compliance/check - Verificar compliance
-GET    /api/v1/compliance/status/{document_id} - Estado de verificación
+POST /api/v1/documents/upload
+     Headers: multipart/form-data
+     Fields: file, document_type
+     → { id, filename, status, created_at }
+
+POST /api/v1/documents/{id}/process
+     → { status: "PROCESSING" }
+
+POST /api/v1/webhooks/processing-complete (Internal)
 ```
 
-### Mock SOAP Server (puerto 8090)
+### FastAPI - Puerto 8000
 
+```http
+GET  /health
+     → { status: "ok" }
+
+GET  /api/v1/documents/?page=1&limit=10
+     → { total, page, limit, items: [...] }
+
+GET  /api/v1/documents/{id}
+     → Document object
+
+POST /api/v1/documents/upload
+     → { id, filename, status, created_at }
+
+POST /api/v1/documents/{id}/process
+     → { status: "PROCESSED", compliance: {...} }
 ```
-GET    /health - Health check
-POST   /soap - Endpoint SOAP para verificar compliance
+
+### Flask Gateway - Puerto 8001
+
+```http
+GET  /health
+     → { status: "ok" }
+
+POST /api/v1/compliance/check
+     Body: { document_id, document_type, storage_path }
+     → { status, check_id, details, checked_at }
+
+GET  /api/v1/compliance/status/{document_id}
+     → { status, details, checked_at }
 ```
+
+### Mock SOAP Server - Puerto 8090
+
+```http
+GET  /health
+     → { status: "ok" }
+
+POST /soap
+     Body: XML SOAP Envelope
+     Response: XML SOAP Response (COMPLIANT|NON_COMPLIANT)
+```
+
+---
 
 ## 🧪 Testing
 
-### Health checks
+### Verificar Health Checks
 
 ```bash
-curl http://localhost:4000/health
-curl http://localhost:8000/health
-curl http://localhost:8001/health
-curl http://localhost:8090/health
+# Todos los servicios
+for svc in 3000 4000 8000 8001 8090; do
+  echo "Testing port $svc..."
+  curl -s http://localhost:$svc/health | jq .
+done
 ```
 
-### Subir documento de prueba
+### Test End-to-End
 
 ```bash
-curl -X POST http://localhost:4000/api/v1/documents/upload \
+# 1. Subir documento
+FILE_UPLOAD=$(curl -X POST http://localhost:4000/api/v1/documents/upload \
   -F "file=@test.pdf" \
-  -F "document_type=financial_report"
+  -F "document_type=financial_report")
+
+DOC_ID=$(echo $FILE_UPLOAD | jq -r '.id')
+echo "Documento subido: $DOC_ID"
+
+# 2. Listar documentos
+curl http://localhost:4000/api/v1/documents?page=1&limit=5 | jq .
+
+# 3. Obtener detalle
+curl http://localhost:4000/api/v1/documents/$DOC_ID | jq .
+
+# 4. Procesar/Verificar
+curl -X POST http://localhost:4000/api/v1/documents/$DOC_ID/process | jq .
+
+# 5. Esperar 2s y ver compliance
+sleep 2
+curl http://localhost:4000/api/v1/documents/$DOC_ID | jq '.compliance'
 ```
 
-### Listar documentos
+### Tests Unitarios
 
 ```bash
-curl http://localhost:4000/api/v1/documents?page=1&limit=10
+# FastAPI tests
+cd services/document-fastapi
+pytest tests/ -v
+
+# Flask tests
+cd services/soap-gateway-flask
+pytest tests/ -v
+
+# Node tests
+cd services/bff-node
+npm test
 ```
 
-## 📊 Modelos de Datos
+---
 
-### Documento
-```json
-{
-  "id": "uuid",
-  "filename": "string",
-  "document_type": "financial_report|tax_filing|regulatory_disclosure",
-  "storage_path": "string",
-  "status": "UPLOADED|PROCESSED",
-  "created_at": "timestamp"
-}
+## 📊 Bases de Datos
+
+### PostgreSQL (puerto 5432)
+
+```sql
+-- Tablas principales
+CREATE TABLE users (
+  id UUID PRIMARY KEY
+);
+
+CREATE TABLE documents (
+  id UUID PRIMARY KEY,
+  user_id UUID,
+  filename VARCHAR,
+  document_type VARCHAR,
+  storage_path VARCHAR,
+  status VARCHAR,
+  created_at TIMESTAMP
+);
+
+CREATE TABLE compliance_checks (
+  id UUID PRIMARY KEY,
+  document_id UUID,
+  status VARCHAR,
+  details VARCHAR,
+  checked_at TIMESTAMP
+);
 ```
 
-### Compliance Check
-```json
-{
-  "id": "uuid",
-  "document_id": "uuid",
-  "status": "COMPLIANT|NON_COMPLIANT",
-  "details": "string",
-  "checked_at": "timestamp"
-}
+### MongoDB (puerto 27017)
+
+```javascript
+// Colecciones
+db.audit_logs.insert({...})
+db.processing_events.insert({...})
 ```
+
+### MinIO (puerto 9000/9001)
+
+```
+Bucket: documents/
+Objects: {document_id}_{filename}
+```
+
+---
 
 ## 🐛 Troubleshooting
 
-### Puerto 5432 ya en uso
+### Puertos en uso
+
 ```bash
-docker-compose down
-docker system prune -a
+# Windows
+netstat -ano | findstr :8000
+taskkill /PID <PID> /F
+
+# Mac/Linux
+lsof -i :8000
+kill -9 <PID>
 ```
+
+### Reiniciar todo limpio
+
+```bash
+docker-compose down -v
+docker system prune -a
+docker-compose up --build
+```
+
+### FastAPI no conecta a PostgreSQL
+
+```bash
+docker-compose logs fastapi
+# Verificar que postgres está healthy:
+docker-compose ps
+```
+
+### Socket.IO no funciona
+
+1. Verificar BFF está corriendo: `curl http://localhost:4000/health`
+2. Abrir DevTools → Network → WS
+3. Buscar conexión a `/notifications`
+
+---
+
+## 🏦 OCI Object Storage (Producción)
+
+Para reemplazar MinIO con Oracle Cloud Object Storage:
+
+1. Crear bucket en OCI
+2. Generar credenciales (Access Key / Secret Key)
+3. Actualizar `services/document-fastapi/app/services/minio_service.py`:
+
+```python
+from oci.object_storage import ObjectStorageClient
+
+client = ObjectStorageClient(
+    config=oci_config,
+    namespace="tu-namespace",
+    bucket_name="compliance-docs"
+)
+```
+
+4. Actualizar `.env`:
+```env
+MINIO_ENDPOINT=<OCI-endpoint>
+MINIO_REGION=<region>
+OCI_CONFIG_PATH=/path/to/.oci/config
+```
+
+---
+
+## 🔐 Seguridad
+
+### Production Checklist
+
+- [ ] Cambiar credenciales por defecto (MinIO, PostgreSQL)
+- [ ] Habilitar HTTPS en todos los endpoints
+- [ ] Usar variables de entorno para secretos (no hardcodear)
+- [ ] Implementar autenticación JWT
+- [ ] Agregar rate limiting
+- [ ] Validar tipos MIME de uploads
+- [ ] Implementar CORS restrictivo
+- [ ] Usar secrets de Docker para credenciales
+
+---
+
+## 📈 Performance Tips
+
+- **Caching**: Redis en BFF para dashboard summary
+- **CDN**: CloudFront/Cloudflare para frontend assets
+- **Database**: Indexes en `documents.status`, `compliance_checks.document_id`
+- **Storage**: Multi-part uploads en MinIO para archivos grandes
+- **Async**: Procesar compliance en background jobs (Celery)
+
+---
+
+## 📋 Requisitos Cumplidos
+
+✅ Arquitectura multi-servicio (5 servicios + 3 BDs)
+✅ REST + SOAP integration
+✅ Object Storage (MinIO)
+✅ Docker Compose 100% funcional
+✅ Tests (FastAPI, Flask, Node)
+✅ CI/CD configurado (GitHub Actions)
+✅ Notificaciones en tiempo real (Socket.IO)
+✅ React frontend con paginación
+✅ TypeScript en BFF
+✅ Documentación completa
+
+---
+
+## 🤝 Contribución
+
+1. Fork el repo
+2. Crea rama: `git checkout -b feature/amazing-feature`
+3. Commit: `git commit -m 'Add amazing feature'`
+4. Push: `git push origin feature/amazing-feature`
+5. Open Pull Request
+
+---
+
+## 📄 Licencia
+
+MIT License - ver `LICENSE` para detalles
+
+---
+
+## ✉️ Contacto
+
+**Autor**: Stivenson Mussa  
+**Email**: smring.designs@gmail.com  
+**GitHub**: [tu-github]
+
+---
+
+**Última actualización**: May 29, 2026
+**Versión**: 1.0.0 (Production Ready)
+
 
 ### MinIO no inicia
 Eliminar volumen de datos:
