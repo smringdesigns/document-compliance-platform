@@ -477,12 +477,13 @@ MIT License - ver `LICENSE` para detalles
 
 ---
 
-## ✉️ Contacto
+## 📧 Contacto
 
-**Autor**: Stivenson Mussa R. 
-**Email**: elmus_18@hotmail.com  
-**GitHub**: https://github.com/smringdesigns 
-**Linkedin**: https://www.linkedin.com/in/stivenson-mussa-rodriguez/ 
+- Autor: Stivenson Mussa R.
+- Email: elmus_18@hotmail.com
+- GitHub: [smringdesigns](https://github.com/smringdesigns)
+- LinkedIn: [Stivenson Mussa](https://www.linkedin.com/in/stivenson-mussa-rodriguez/)
+
 ---
 
 **Última actualización**: May 27, 2026
